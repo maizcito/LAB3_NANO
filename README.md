@@ -16,6 +16,6 @@ PASO TRES - DESCARGAR GITHUB
 
 https://docs.github.com/es/desktop/installing-and-authenticating-to-github-desktop/installing-github-desktop
 
-PARA ENTENDER COMO IMPLEMENTAR TODO
+VIDEO EXPLICATIVO DE GIT Y GITHUB
 
-https://www.youtube.com/watch?v=IJV35V3H9Xc
+https://www.youtube.com/watch?v=jxVrBq1mQDc
