@@ -1,0 +1,273 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands,es-noindentfirst]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[colorlinks=true,linkcolor=cyan!70!blue,urlcolor=cyan!70!blue]{hyperref}
+
+\setlist[enumerate]{label=\arabic*.}
+
+% --- Si una imagen no existe, se muestra un recuadro en su lugar ---
+% Carpeta de imágenes (usar "/" y terminar con "/")
+\newcommand{\rutaimg}{IMAGES/}
+\newcommand{\imagen}[2][\linewidth]{%
+  \IfFileExists{\rutaimg #2}{\includegraphics[width=#1]{\rutaimg #2}}%
+  {\fbox{\parbox{#1}{\centering\vspace{2cm}Falta la imagen: \texttt{#2}\vspace{2cm}}}}%
+}
+
+% --- Estilo de listados de código ---
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\title{%
+  \imagen[0.5\linewidth]{logo_unmsm.png}\\
+  Laboratorio Dirigido Nro. 03 : IGBTs}
+\author{Profesora: MsC. Luz Adanaqué}
+\date{October 7, 2026}
+
+\begin{document}
+
+\maketitle
+
+%--------------------------------------------------------------
+\section{Indicaciones}
+\begin{itemize}
+  \item La entrega principal de este laboratorio consta de la tabla de
+        resultados completa y las gráficas comparativas.
+  \item Sea claro en sus simulaciones en LTspice; las señales de prueba
+        ($V_{CE}$, $I_C$, $V_{GE}$) deben presentarse de manera ordenada,
+        priorizando la visualización correcta de los transitorios.
+  \item El día 21 se realizará una breve exposición con los principales
+        hallazgos en su experiencia de laboratorio, en base a ello se
+        ponderará la calificación.
+  \item El laboratorio puede ser en parejas o individual.
+\end{itemize}
+
+%--------------------------------------------------------------
+\section{Título}
+Caracterización y Simulación Comparativa de Transistores IGBT en LTspice
+
+%--------------------------------------------------------------
+\section{Herramientas}
+\begin{enumerate}
+  \item LTspice.
+  \item Hojas de datos y modelos SPICE.
+  \begin{enumerate}[label=(\alph*)]
+    \item Duncan Electronics Theorical Models: NIGBT y PIGBT.
+    \item Fuji Electric Serie X: FGW50XS65, FGW50XS65C, FGW75XS65,
+          FGW75XS65C.
+  \end{enumerate}
+\end{enumerate}
+
+Esto se puede encontrar en los siguientes enlaces:
+\begin{enumerate}[label=(\alph*)]
+  \item \url{https://www.duncanamps.com/spicemosfet.html}
+  \item \url{https://www.fujielectric.com/products/semiconductors_devices/\allowbreak
+        semiconductor/product_series/\allowbreak
+        model_power_discrete_technical_discrete_p-spice.html}
+\end{enumerate}
+
+%--------------------------------------------------------------
+\section{Agregar Componentes de Modelos SPICE en LTspice}
+Para agregar los modelos SPICE dentro del entorno de LTSpice, seguir el siguiente procedimiento.
+
+\begin{enumerate}
+  \item Guardar el archivo descargado en el mismo directorio donde se creará
+        el esquema de LTspice (\texttt{.asc}).
+  \item Añadir la directiva de texto \texttt{.include nombre\_del\_modelo.lib}
+        directamente en el diseño esquemático (Como en la figura~\ref{fig:nigbt}).
+  \item Insertar un símbolo genérico de IGBT desde la biblioteca de
+        componentes.
+
+  \begin{figure}[H]
+    \centering
+    \imagen[0.4\linewidth]{fig1_nigbt_lib.png}
+    \caption{Ejemplo de NIGBT custom mediante librería.}
+    \label{fig:nigbt}
+  \end{figure}
+
+  \item Hacer clic derecho sobre el símbolo del IGBT y modificar el atributo
+        \texttt{Value} para que coincida exactamente con el nombre del modelo
+        \texttt{.subckt} definido dentro del archivo de texto del fabricante.
+        En la lista~\ref{lst:pigbt} se muestra el nombre del subcircuito
+        resaltado para el modelo \texttt{PIGBT.lib}.
+\end{enumerate}
+
+\begin{lstlisting}[caption={Modelo SPICE del P-IGBT genérico},label={lst:pigbt},escapeinside={(*@}{@*)}]
+*PIGBT
+*P-IGBT Default MCE C G E 5-20-95
+*MCE 600V 40A 24.3ns pkg:TO-220
+.SUBCKT XPIGBT 71 72 74
+Q1 83 81 85 QOUT
+M1 81 82 83 83 MFIN L=1U W=1U
+DSD 81 83 DO
+DBE 81 85 DE
+RC 85 71 21.2M
+RE 83 73 2.12M
+RG 72 82 25.5
+CGE 82 83 1.42N
+CGC 82 71 1P
+EGD 91 0 81 82 1
+VFB 93 0 0
+FFB 81 82 VFB 1
+CGD 92 93 1.41N
+R1 92 0 1
+D1 91 92 DLIM
+DHV 94 93 DR
+R2 91 94 1
+D2 94 0 DLIM
+LE 73 74 7.5N
+DLV 94 95 DR 13
+RLV 95 0 1
+ESD 96 93 POLY(1) 81 83 19 1
+MLV 95 96 93 93 SW
+.MODEL SW NMOS (LEVEL=3 VTO=0 KP=5)
+.MODEL QOUT NPN (IS=37.7F NF=1.2 BF=5.1 CJE=3.48N TF=24.3N XTB=1.3)
+.MODEL MFIN PMOS (LEVEL=3 VMAX=400K THETA=46.1M ETA=2M VTO=-5.2 KP=2.12)
+.MODEL DR D (IS=37.7F CJO=100P VJ=1 M=.82)
+.MODEL DO D (IS=37.7F BV=600 CJO=2.07N VJ=1 M=.7)
+.MODEL DE D (IS=37.7F BV=14.3 N=2)
+.MODEL DLIM D (IS=100N)
+.ENDS XPIGBT
+\end{lstlisting}
+
+\begin{enumerate}[resume]
+  \item Si se presenta un error como el que se muestra en la
+        lista~\ref{lst:error}, hacer \texttt{Ctrl + Click Derecho} en el
+        componente, y en el apartado \texttt{Prefix} cambiar la \texttt{Z}
+        por una \texttt{X}.
+\end{enumerate}
+
+\begin{lstlisting}[caption={Error de Prefijo},label={lst:error}]
+LTspice 26.0.1 for Windows
+Circuit: C:\Users\user\Downloads\NIGBT.net
+C:\Users\user\Downloads\NIGBT.net (3): Undefined model "xirgbc20s".
+Note that there is a sub-circuit with the same name "XIRGBC20S" defined,
+which might indicate that this error is simply caused by the wrong prefix letter.
+Consider using the prefix "X" instead of "Z".
+You can change the prefix by editing the "Prefix" attribute in the component attribute editor.
+Z1 N001 N004 0 XIRGBC20S
+               ^^^^^^^^^
+\end{lstlisting}
+
+%--------------------------------------------------------------
+\section{Procedimiento}
+
+\subsection{Parte I: Simulación comparativa entre IGBT de canal N y canal P}
+En esta sección se detallan los pasos para implementar el banco de pruebas
+Double Pulse Test (DPT) para ambos tipos de transistores.
+
+\begin{enumerate}
+  \item \textbf{Configuración del circuito para el N-IGBT (Lado Bajo / Low-Side)}\\
+        Realice el esquema de conexión mostrado en la figura~\ref{fig:esquema}.
+
+        \textbf{Explicación:}
+        \begin{enumerate}
+          \item Terminal del \textbf{Emisor} conectada a la referencia (Tierra / 0\,V)
+                mediante una resistencia de $R = 0.001\,\Omega$ (para medir
+                corriente).
+          \item Inductor de carga en serie con la fuente de voltaje conectado
+                al \textbf{Colector}, esta fuente debe ser una fuente de corriente
+                continua (VDC) y de un valor alto.
+          \item Colocar un diodo de protección en paralelo con el inductor.
+          \item Configure una fuente de voltaje de pulsos en la Compuerta
+                ($V_{GE}$). Conectar en serie con una resistencia $R_G$ de
+                ej.\ $10\,\Omega$.
+        \end{enumerate}
+
+  \item \textbf{Configuración del circuito para el P-IGBT (Lado Alto / High-Side)}\\
+        Realice el esquema de conexión mostrado en la figura~\ref{fig:esquema}.
+        \begin{enumerate}
+          \item Inserte el símbolo del P-IGBT y asigne su modelo SPICE.
+          \item Realice una configuración similar a la del N-IGBT.
+          \item Configure la fuente de disparo $V_{GE}$ entre el terminal Gate
+                (a través de $R_G$) y el \textbf{Emisor}. En modo \texttt{PULSE}, los niveles
+                deben ser de 0\,V (apagado) a $-15$\,V (encendido), ya que el
+                P-IGBT requiere un voltaje negativo respecto a su emisor para
+                entrar en conducción.
+        \end{enumerate}
+
+  \item \textbf{Parámetros del Doble Pulso y Simulación Transitoria}
+        \begin{enumerate}
+          \item Configure la fuente \texttt{PULSE} para generar dos pulsos consecutivos:
+                un primer pulso largo (para cargar el inductor hasta la
+                corriente nominal de prueba $I_C$) y un segundo pulso corto
+                (para evaluar la dinámica de conmutación) como se muestra en
+                la figura~\ref{fig:pulsos}. Para el NIGBT, este debe estar
+                entre 0 y 15\,V; para el PIGBT, entre 0 y $-15$\,V.
+          \item Añada la directiva de simulación transitoria con una
+                resolución temporal fina para capturar correctamente los
+                eventos de alta frecuencia.
+        \end{enumerate}
+
+  \item \textbf{Análisis de resultados}
+        \begin{enumerate}
+        \item Ejecute la simulación. Grafique de forma clara $V_{GE}$,
+                $V_{CE}$ y la corriente de colector $I_C$ para ambos casos.
+        \item A partir del acercamiento realizado al segundo pulso de
+                apagado, determine el valor de la corriente de colector
+                ($I_C$) en el punto exacto donde inicia la fase asintótica
+                denominada \emph{tail current}. Explique, basándose en la
+                física del dispositivo, por qué esta corriente no cae
+                instantáneamente a cero.
+        \item Utilizando los cursores de LTspice, obtenga el valor del
+                tiempo de retardo de apagado ($t_{d(off)}$) midiendo el
+                intervalo entre el 90\,\% de $V_{GE}$ y el 90\,\% de $I_C$.
+                Compare este dato con el valor proporcionado en la hoja de
+                datos (\emph{datasheet}) del fabricante y justifique
+                cualquier discrepancia encontrada.
+        \item Calcule la energía de apagado ($E_{off}$) mediante la integral
+                del producto $V_{CE}\cdot I_C$ durante el periodo de
+                conmutación. ¿Qué porcentaje de esta energía total es
+                atribuible exclusivamente al periodo de la corriente de cola?
+
+        \item Observe el comportamiento del voltaje colector-emisor
+                ($V_{CE}$) durante el apagado e identifique el valor del pico de
+                sobretensión causado por las inductancias parásitas. ¿Cómo varía este pico
+                de voltaje al comparar los modelos con y sin diodo de marcha libre integrado?
+
+        \item Analice la relación entre la resistencia de compuerta
+                ($R_G$) utilizada y el tiempo de retardo medido. Según sus resultados, ¿qué
+                impacto tendría duplicar el valor de $R_G$ sobre las pérdidas por
+                conmutación y la velocidad de respuesta del dispositivo?
+        \end{enumerate}
+\end{enumerate}
+
+\begin{figure}[ht]
+  \centering
+  \imagen[0.5\linewidth]{fig2_esquema_igbt.png}
+  \caption{Esquema a usar para los circuitos IGBT.}
+  \label{fig:esquema}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \imagen[0.5\linewidth]{fig3_pulsos_compuerta.png}
+  \caption{Pulsos de control de la compuerta.}
+  \label{fig:pulsos}
+\end{figure}
+
+%--------------------------------------------------------------
+\section{Conclusiones}
+Redactar un análisis técnico (una página como mínimo) debatiendo las
+diferencias fundamentales observadas entre los canales N y P.
+Posteriormente, justificar con fundamentos físicos cómo el incremento del
+área del silicio (50\,A vs 75\,A) y la presencia del diodo co-empaquetado
+impactan directamente en las pérdidas estáticas y dinámicas de los modelos
+evaluados.
+
+\end{document}
